@@ -278,6 +278,7 @@ function getLocalData(){try{var d=localStorage.getItem('budget-'+getKey());if(d)
 function saveLocal(data){try{localStorage.setItem('budget-'+getKey(),JSON.stringify(data))}catch(e){}}
 
 function saveData(data){
+data.lastModified=Date.now();
 currentData=data;
 saveLocal(data);
 try{db.ref('budgets/'+getKey()).set(data)}catch(e){}
@@ -323,6 +324,9 @@ try{
 db.ref('budgets/'+getKey()).on('value',function(snapshot){
 var fbData=snapshot.val();
 if(fbData){
+var localTime=currentData.lastModified||0;
+var fbTime=fbData.lastModified||0;
+if(fbTime>=localTime){
 currentData=fbData;
 if(!currentData.bills)currentData.bills=getDefaultBills();
 if(!currentData.income)currentData.income=[];
@@ -330,6 +334,7 @@ if(!currentData.expenses)currentData.expenses=[];
 if(!currentData.goals)currentData.goals=getDefaultGoals();
 saveLocal(currentData);
 render();
+}
 isOnline=true;
 document.getElementById('syncDot').className='sync-dot sync-online';
 }
