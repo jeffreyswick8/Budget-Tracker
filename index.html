@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#dc2626">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Budget Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0d0d0d;--surface:#1a1a1a;--card:#2a2a2a;--accent:#dc2626;--accent-light:#ef4444;--accent-pale:#fca5a5;--green:#22c55e;--amber:#f59e0b;--text:#f5f5f5;--muted:#a3a3a3;--border:#333;--radius:12px}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto}
+.header{background:var(--surface);padding:14px 16px;border-bottom:1px solid var(--border);text-align:center;flex-shrink:0}
+.header h1{font-size:18px;color:var(--accent)}
+.header .month{font-size:12px;color:var(--muted);margin-top:2px}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 20px}
+.tab-content{display:none;animation:fadeIn .2s ease}
+.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.bottom-nav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nav-btn svg{width:22px;height:22px;fill:currentColor}
+.nav-btn.active{color:var(--accent)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.card-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.card-value{font-size:26px;font-weight:700;margin-top:2px}
+.summary-row{display:flex;gap:10px;margin-bottom:10px}
+.summary-item{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.summary-item .val{font-size:20px;font-weight:700}
+.summary-item .lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase}
+.val-green{color:var(--green)}.val-red{color:var(--accent-light)}.val-amber{color:var(--amber)}
+
+.rent-status{padding:10px 14px;border-radius:var(--radius);margin-bottom:10px;font-weight:600;font-size:13px;text-align:center}
+.rent-paid{background:rgba(34,197,94,.1);border:1px solid var(--green);color:var(--green)}
+.rent-unpaid{background:rgba(220,38,38,.1);border:1px solid var(--accent);color:var(--accent-light);animation:pulse 2s infinite}
+
+.rec-card{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.rec-title{font-size:13px;font-weight:700;color:var(--accent-light);margin-bottom:4px}
+.rec-detail{font-size:12px;color:var(--muted)}
+.rec-amount{font-size:20px;font-weight:700;color:var(--text);margin-top:4px}
+
+.due-soon{background:var(--card);border:1px solid var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px}
+.due-soon-title{font-size:11px;color:var(--amber);font-weight:600;margin-bottom:6px}
+.due-soon-item{font-size:12px;color:var(--text);padding:3px 0}
+
+.health-bar{height:8px;border-radius:4px;background:var(--card);overflow:hidden;margin-top:6px;border:1px solid var(--border)}
+.health-fill{height:100%;border-radius:4px;transition:width .5s ease,background .3s ease}
+
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;text-align:center;min-height:48px}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn:active{opacity:.7}
+.btn-sm{padding:10px 14px;font-size:12px;min-height:40px;width:auto;display:inline-block}
+
+input,select,textarea{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:14px;width:100%;font-family:inherit;min-height:44px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+
+.form-group{margin-bottom:12px}
+.form-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:block;text-transform:uppercase}
+.form-row{display:flex;gap:8px}
+
+.list-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.list-item .info{flex:1;min-width:0}
+.list-item .amount{font-weight:700;font-size:15px;white-space:nowrap}
+.list-item .date{font-size:11px;color:var(--muted)}
+.list-item .note{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.delete-btn{background:none;border:none;color:#666;font-size:18px;cursor:pointer;padding:8px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
+.delete-btn:active{color:var(--accent)}
+
+.bill-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;position:relative}
+.bill-card.past-due{border-color:var(--accent)}
+.bill-card.paid{opacity:.6}
+.bill-name{font-weight:600;font-size:14px}
+.bill-name.paid-name{text-decoration:line-through;color:var(--muted)}
+.bill-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.bill-amount{font-size:18px;font-weight:700;position:absolute;right:14px;top:14px}
+.bill-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.bill-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px;vertical-align:middle}
+.badge-paid{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-pastdue{background:rgba(220,38,38,.15);color:var(--accent-light);animation:pulse 2s infinite}
+.badge-urgent{background:rgba(220,38,38,.3);color:#fff;animation:pulse 1.5s infinite}
+.badge-carried{background:rgba(245,158,11,.15);color:var(--amber)}
+.sort-bar{display:flex;gap:6px;margin-bottom:10px}
+.sort-btn{padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer}
+.sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.goal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.goal-header{display:flex;justify-content:space-between;align-items:center}
+.goal-name{font-weight:600;font-size:14px}
+.goal-amounts{font-size:11px;color:var(--muted)}
+.progress-bar{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin:8px 0;border:1px solid var(--border)}
+.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .5s ease}
+.goal-add-row{display:flex;gap:6px;margin-top:8px}
+.goal-input{flex:1}
+
+.fab{position:fixed;bottom:80px;right:16px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(220,38,38,.4);display:flex;align-items:center;justify-content:center;z-index:50}
+.fab.hidden{display:none}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:none;padding:16px;overflow-y:auto}
+.modal-overlay.active{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:400px;width:100%;margin:60px auto 20px}
+.modal h3{color:var(--text);margin-bottom:4px;font-size:18px}
+.modal p{color:var(--muted);font-size:12px;margin-bottom:16px}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;max-width:90%;text-align:center;box-shadow:0 4px 12px rgba(220,38,38,.4);animation:fadeIn .2s ease}
+.section-title{font-size:16px;font-weight:700;margin-bottom:12px}
+.totals-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:12px;display:flex;justify-content:space-between;font-size:13px}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle}
+.sync-online{background:var(--green)}.sync-offline{background:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+<h1>Budget Tracker <span class="sync-dot sync-offline" id="syncDot"></span></h1>
+<div class="month" id="headerMonth"></div>
+</div>
+<div class="content" id="mainContent">
+
+<!-- HOME TAB -->
+<div class="tab-content active" id="tab-home">
+<div id="rentStatus"></div>
+<div id="payNext"></div>
+<div class="summary-row">
+<div class="summary-item"><div class="val val-green" id="dashIncome">$0.00</div><div class="lbl">Earned</div></div>
+<div class="summary-item"><div class="val val-red" id="dashRemaining">$0.00</div><div class="lbl">Remaining</div></div>
+</div>
+<div class="card"><div class="card-label">Net Cash Position</div><div class="card-value" id="dashNet">$0.00</div><div class="health-bar"><div class="health-fill" id="healthFill"></div></div></div>
+<button class="btn btn-outline" onclick="openTransferModal()" style="margin-bottom:10px">Transfer to Savings</button>
+<div id="dueSoon"></div>
+</div>
+
+<!-- INCOME TAB -->
+<div class="tab-content" id="tab-income">
+<div class="section-title">Income</div>
+<div class="card"><div class="card-label">This Month</div><div class="card-value val-green" id="incomeTotal">$0.00</div></div>
+<div class="card">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="incomeDate"></div>
+<div class="form-group"><label class="form-label">Amount</label><input type="number" inputmode="decimal" id="incomeAmount" placeholder="0.00" step="0.01"></div>
+<div class="form-group"><label class="form-label">Note (optional)</label><input type="text" id="incomeNote" placeholder="Description"></div>
+<button class="btn btn-accent" onclick="addIncome()">Add Income</button>
+</div>
+<div id="incomeList"></div>
+</div>
+
+<!-- BILLS TAB -->
+<div class="tab-content" id="tab-bills">
+<div class="section-title">Bills</div>
+<div class="sort-bar">
+<button class="sort-btn active" onclick="sortBills('due',this)">Due Date</button>
+<button class="sort-btn" onclick="sortBills('pastdue',this)">Past Due</button>
+<button class="sort-btn" onclick="sortBills('amount',this)">Amount</button>
+</div>
+<div id="billsList"></div>
+<div class="totals-bar" id="billsTotals"></div>
+</div>
+
+<!-- EXPENSES TAB -->
+<div class="tab-content" id="tab-expenses">
+<div class="section-title">Unexpected Expenses</div>
+<div class="card"><div class="card-label">This Month</div><div class="card-value val-red" id="expenseTotal">$0.00</div></div>
+<div class="card">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="expenseDate"></div>
+<div class="form-group"><label class="form-label">Amount</label><input type="number" inputmode="decimal" id="expenseAmount" placeholder="0.00" step="0.01"></div>
+<div class="form-group"><label class="form-label">Description</label><input type="text" id="expenseDesc" placeholder="What was it?"></div>
+<button class="btn btn-accent" onclick="addExpense()">Add Expense</button>
+</div>
+<div id="expenseList"></div>
+</div>
+
+<!-- SAVINGS TAB -->
+<div class="tab-content" id="tab-savings">
+<div class="section-title">Savings Goals</div>
+<div class="card"><div class="card-label">Total Saved</div><div class="card-value val-green" id="savingsTotal">$0.00</div><div style="font-size:11px;color:var(--muted)" id="savingsOf"></div></div>
+<div id="goalsList"></div>
+<button class="btn btn-ghost" onclick="openAddGoalModal()">+ Add Goal</button>
+</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+<button class="nav-btn active" onclick="switchTab('home',this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+<button class="nav-btn" onclick="switchTab('income',this)"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Income</button>
+<button class="nav-btn" onclick="switchTab('bills',this)"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 9h-2v2H9v-2H7v-2h2V7h2v2h2v2zm-2-9l5.5 5.5H11V2z"/></svg>Bills</button>
+<button class="nav-btn" onclick="switchTab('expenses',this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>Expenses</button>
+<button class="nav-btn" onclick="switchTab('savings',this)"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Savings</button>
+</nav>
+</div>
+
+<button class="fab hidden" id="addBillFab" onclick="openAddBillModal()">+</button>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="transferModal">
+<div class="modal"><h3>Transfer to Savings</h3><p>Allocate from your net cash to goals</p><div id="transferGoalsList"></div>
+<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-accent" onclick="executeTransfer()" style="flex:1">Confirm</button><button class="btn btn-ghost" onclick="closeModal('transferModal')" style="flex:1">Cancel</button></div></div>
+</div>
+
+<div class="modal-overlay" id="addBillModal">
+<div class="modal"><h3 id="billModalTitle">Add Bill</h3>
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="billName"></div>
+<div class="form-row"><div class="form-group" style="flex:1"><label class="form-label">Amount</label><input type="number" inputmode="decimal" id="billAmount" step="0.01"></div>
+<div class="form-group" style="flex:1"><label class="form-label">Due Day</label><input type="number" inputmode="numeric" id="billDueDay" min="1" max="31"></div></div>
+<div class="form-group"><label class="form-label">Grace Period (days)</label><input type="number" inputmode="numeric" id="billGrace" value="5"></div>
+<input type="hidden" id="billEditId">
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-accent" onclick="saveBill()" style="flex:1">Save</button><button class="btn btn-ghost" onclick="closeModal('addBillModal')" style="flex:1">Cancel</button></div></div>
+</div>
+
+<div class="modal-overlay" id="addGoalModal">
+<div class="modal"><h3>Add Savings Goal</h3>
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="goalName"></div>
+<div class="form-row"><div class="form-group" style="flex:1"><label class="form-label">Target Amount</label><input type="number" inputmode="decimal" id="goalTarget" step="0.01"></div>
+<div class="form-group" style="flex:1"><label class="form-label">Priority</label><input type="number" inputmode="numeric" id="goalPriority" min="1" value="1"></div></div>
+<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-accent" onclick="saveGoal()" style="flex:1">Save</button><button class="btn btn-ghost" onclick="closeModal('addGoalModal')" style="flex:1">Cancel</button></div></div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+<div class="modal"><h3 id="confirmTitle">Confirm</h3><p id="confirmMsg"></p>
+<div style="display:flex;gap:8px"><button class="btn btn-accent" id="confirmYes" style="flex:1">Yes</button><button class="btn btn-ghost" onclick="closeModal('confirmModal')" style="flex:1">No</button></div></div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+// ===== FIREBASE INIT =====
+var firebaseConfig={apiKey:"AIzaSyBSbPq4wucgAha9yyccI0rVF8y6Zzw97Mw",authDomain:"budget-tracket-200b6.firebaseapp.com",databaseURL:"https://budget-tracket-200b6-default-rtdb.firebaseio.com",projectId:"budget-tracket-200b6",storageBucket:"budget-tracket-200b6.firebasestorage.app",messagingSenderId:"442984201568",appId:"1:442984201568:web:8203ec4ffbf1a05b283205"};
+firebase.initializeApp(firebaseConfig);
+var db=firebase.database();
+var isOnline=false;
+var currentData=null;
+var billSortMode='due';
+
+var now=new Date();
+var currentMonth=now.getMonth();
+var currentYear=now.getFullYear();
+
+function getKey(){return currentYear+'-'+currentMonth}
+function fmt(n){return '$'+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+
+// ===== DEFAULT DATA =====
+function getDefaultBills(){return[
+{id:1,name:'Rent',amount:2804.99,dueDay:1,grace:0,paid:false,urgent:false,carriedOver:false},
+{id:2,name:'Electric',amount:607.04,dueDay:17,grace:10,paid:false,urgent:false,carriedOver:false},
+{id:3,name:'Honda',amount:580,dueDay:15,grace:10,paid:false,urgent:false,carriedOver:false},
+{id:4,name:'Toyota',amount:462.68,dueDay:15,grace:10,paid:false,urgent:false,carriedOver:false},
+{id:5,name:'Cell Phones',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:6,name:'Internet',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:7,name:'Water',amount:0,dueDay:15,grace:10,paid:false,urgent:false,carriedOver:false},
+{id:8,name:'YouTube TV',amount:0,dueDay:15,grace:3,paid:false,urgent:false,carriedOver:false},
+{id:9,name:'Dog Food',amount:0,dueDay:15,grace:3,paid:false,urgent:false,carriedOver:false},
+{id:10,name:'Netflix',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:11,name:'Spotify',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:12,name:'Disney+',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:13,name:'Hulu',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:14,name:'Paramount+',amount:0,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:15,name:'YT Add-on',amount:61.04,dueDay:15,grace:5,paid:false,urgent:false,carriedOver:false},
+{id:16,name:'E-cigs',amount:150,dueDay:1,grace:0,paid:false,urgent:false,carriedOver:false}
+]}
+
+function getDefaultGoals(){return[
+{id:1,name:'Toyota Registration',target:750,saved:0,priority:1},
+{id:2,name:'Honda Dealership',target:580,saved:0,priority:2},
+{id:3,name:'Friend',target:100,saved:0,priority:3},
+{id:4,name:'Cash Advance',target:300,saved:0,priority:4}
+]}
+
+function getDefaultData(){return{bills:getDefaultBills(),income:[],expenses:[],goals:getDefaultGoals()}}
+
+// ===== DATA SYNC =====
+function getLocalData(){try{var d=localStorage.getItem('budget-'+getKey());if(d)return JSON.parse(d)}catch(e){}return null}
+function saveLocal(data){try{localStorage.setItem('budget-'+getKey(),JSON.stringify(data))}catch(e){}}
+
+function saveData(data){
+currentData=data;
+saveLocal(data);
+try{db.ref('budgets/'+getKey()).set(data)}catch(e){}
+}
+
+function doRollover(data){
+var prevMonth=currentMonth===0?11:currentMonth-1;
+var prevYear=currentMonth===0?currentYear-1:currentYear;
+var prevKey=prevYear+'-'+prevMonth;
+var prevLocal=null;
+try{var p=localStorage.getItem('budget-'+prevKey);if(p)prevLocal=JSON.parse(p)}catch(e){}
+if(!prevLocal)return data;
+var unpaidCount=0;
+if(prevLocal.bills){
+prevLocal.bills.forEach(function(ob){
+if(!ob.paid){
+var match=null;
+data.bills.forEach(function(nb){if(nb.name===ob.name)match=nb});
+if(match){match.carriedOver=true;match.urgent=ob.urgent||false}
+unpaidCount++;
+}});
+}
+if(prevLocal.goals&&prevLocal.goals.length>0){data.goals=prevLocal.goals}
+if(unpaidCount>0){
+setTimeout(function(){showToast('New month! '+unpaidCount+' unpaid bill'+(unpaidCount!==1?'s':'')+' carried over.')},800);
+}
+return data;
+}
+
+function initData(){
+var local=getLocalData();
+if(local){
+currentData=local;
+render();
+}else{
+currentData=getDefaultData();
+currentData=doRollover(currentData);
+saveData(currentData);
+render();
+}
+// Listen for Firebase changes (real-time sync)
+try{
+db.ref('budgets/'+getKey()).on('value',function(snapshot){
+var fbData=snapshot.val();
+if(fbData){
+currentData=fbData;
+if(!currentData.bills)currentData.bills=getDefaultBills();
+if(!currentData.income)currentData.income=[];
+if(!currentData.expenses)currentData.expenses=[];
+if(!currentData.goals)currentData.goals=getDefaultGoals();
+saveLocal(currentData);
+render();
+isOnline=true;
+document.getElementById('syncDot').className='sync-dot sync-online';
+}
+});
+db.ref('.info/connected').on('value',function(snap){
+isOnline=snap.val()===true;
+document.getElementById('syncDot').className=isOnline?'sync-dot sync-online':'sync-dot sync-offline';
+});
+}catch(e){isOnline=false}
+}
+
+// ===== CALCULATIONS =====
+function getDayOfMonth(){return new Date().getDate()}
+function getDaysPastDue(bill){
+var today=getDayOfMonth();
+if(today>bill.dueDay)return today-bill.dueDay;
+return 0;
+}
+function getDaysUntilDue(bill){
+var today=getDayOfMonth();
+if(bill.dueDay>=today)return bill.dueDay-today;
+return 0;
+}
+function isGraceExpired(bill){var pd=getDaysPastDue(bill);return pd>0&&pd>bill.grace}
+function isInGrace(bill){var pd=getDaysPastDue(bill);return pd>0&&pd<=bill.grace}
+function graceRemaining(bill){var pd=getDaysPastDue(bill);if(pd>0&&pd<=bill.grace)return bill.grace-pd;return 0}
+function calcTotals(data){
+var totalIncome=0;data.income.forEach(function(i){totalIncome+=i.amount});
+var totalBills=0;var paidBills=0;
+data.bills.forEach(function(b){totalBills+=b.amount;if(b.paid)paidBills+=b.amount});
+var totalExpenses=0;data.expenses.forEach(function(e){totalExpenses+=e.amount});
+var totalSaved=0;data.goals.forEach(function(g){totalSaved+=g.saved});
+var net=totalIncome-paidBills-totalExpenses-totalSaved;
+return{totalIncome:totalIncome,totalBills:totalBills,paidBills:paidBills,remaining:totalBills-paidBills,totalExpenses:totalExpenses,totalSaved:totalSaved,net:net};
+}
+
+// ===== SMART PRIORITIZATION =====
+function getPayNextRecommendation(data){
+var unpaid=data.bills.filter(function(b){return !b.paid&&b.amount>0});
+if(unpaid.length===0)return{type:'allpaid',bill:null,reason:'All caught up!'};
+
+// 1. Urgent bills
+var urgent=unpaid.filter(function(b){return b.urgent});
+urgent.sort(function(a,b){return a.dueDay-b.dueDay});
+if(urgent.length>0)return{type:'urgent',bill:urgent[0],reason:'Flagged for immediate payment'};
+
+// 2. Rent first
+var rent=null;
+unpaid.forEach(function(b){if(b.name==='Rent')rent=b});
+if(rent)return{type:'rent',bill:rent,reason:'Pay rent first — all other bills pushed back until rent is covered'};
+
+// 3. Past grace period
+var pastGrace=unpaid.filter(function(b){return isGraceExpired(b)});
+pastGrace.sort(function(a,b){return(getDaysPastDue(b)-b.grace)-(getDaysPastDue(a)-a.grace)});
+if(pastGrace.length>0){var b=pastGrace[0];return{type:'pastgrace',bill:b,reason:getDaysPastDue(b)+' days past due — grace period ('+b.grace+' days) expired!'};}
+
+// 4. In grace
+var inGrace=unpaid.filter(function(b){return isInGrace(b)});
+inGrace.sort(function(a,b){return graceRemaining(a)-graceRemaining(b)});
+if(inGrace.length>0){var b2=inGrace[0];return{type:'ingrace',bill:b2,reason:getDaysPastDue(b2)+' days past due — '+graceRemaining(b2)+' days of grace remaining'};}
+
+// 5. Due today/tomorrow
+var dueNow=unpaid.filter(function(b){return getDaysUntilDue(b)<=1&&getDaysPastDue(b)===0});
+if(dueNow.length>0)return{type:'duenow',bill:dueNow[0],reason:'Due '+(getDaysUntilDue(dueNow[0])===0?'today':'tomorrow')};
+
+// 6. Due within 3 days
+var dueSoon=unpaid.filter(function(b){return getDaysUntilDue(b)<=3&&getDaysPastDue(b)===0});
+dueSoon.sort(function(a,b){return getDaysUntilDue(a)-getDaysUntilDue(b)});
+if(dueSoon.length>0)return{type:'duesoon',bill:dueSoon[0],reason:'Due in '+getDaysUntilDue(dueSoon[0])+' days'};
+
+// 7. Next by due date
+unpaid.sort(function(a,b){return a.dueDay-b.dueDay});
+return{type:'next',bill:unpaid[0],reason:'Next bill due on the '+unpaid[0].dueDay+ordSuffix(unpaid[0].dueDay)};
+}
+function ordSuffix(n){var s=['th','st','nd','rd'];var v=n%100;return s[(v-20)%10]||s[v]||s[0]}
+
+// ===== RENDER FUNCTIONS =====
+function render(){
+if(!currentData)return;
+var t=calcTotals(currentData);
+renderDashboard(currentData,t);
+renderIncome(currentData,t);
+renderBills(currentData,t);
+renderExpenses(currentData,t);
+renderGoals(currentData,t);
+}
+
+function renderDashboard(data,t){
+// Month header
+var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+document.getElementById('headerMonth').textContent=months[currentMonth]+' '+currentYear;
+
+// Rent status
+var rent=null;data.bills.forEach(function(b){if(b.name==='Rent')rent=b});
+var rs=document.getElementById('rentStatus');
+if(rent&&rent.paid){rs.innerHTML='<div class="rent-status rent-paid">RENT PAID \u2705</div>'}
+else if(rent){rs.innerHTML='<div class="rent-status rent-unpaid">RENT NOT PAID \u26a0\ufe0f \u2014 Due the '+rent.dueDay+ordSuffix(rent.dueDay)+'</div>'}
+else{rs.innerHTML=''}
+
+// Pay Next
+var rec=getPayNextRecommendation(data);
+var pn=document.getElementById('payNext');
+if(rec.type==='allpaid'){pn.innerHTML='<div class="rec-card" style="border-color:var(--green)"><div class="rec-title" style="color:var(--green)">\u2705 '+rec.reason+'</div></div>'}
+else{
+var icon=rec.type==='urgent'?'\u26a1':'\ud83d\udcb3';
+pn.innerHTML='<div class="rec-card"><div class="rec-title">'+icon+' PAY NEXT: '+rec.bill.name+'</div><div class="rec-detail">'+rec.reason+'</div><div class="rec-amount">'+fmt(rec.bill.amount)+'</div></div>';
+}
+
+// Summary
+document.getElementById('dashIncome').textContent=fmt(t.totalIncome);
+document.getElementById('dashRemaining').textContent=fmt(t.remaining);
+var netEl=document.getElementById('dashNet');
+netEl.textContent=fmt(t.net);
+netEl.className='card-value '+(t.net>=0?'val-green':'val-red');
+
+// Health bar
+var healthPct=t.totalBills>0?Math.min(100,Math.max(0,(t.totalIncome/t.totalBills)*100)):100;
+var hf=document.getElementById('healthFill');
+hf.style.width=healthPct+'%';
+hf.style.background=healthPct>=100?'var(--green)':healthPct>=60?'var(--amber)':'var(--accent)';
+
+// Due soon
+var ds=document.getElementById('dueSoon');
+var soon=data.bills.filter(function(b){return !b.paid&&b.amount>0&&getDaysUntilDue(b)<=3&&getDaysPastDue(b)===0});
+if(soon.length>0){
+var h='<div class="due-soon"><div class="due-soon-title">\u23f0 Bills Due Soon</div>';
+soon.forEach(function(b){var d=getDaysUntilDue(b);h+='<div class="due-soon-item">'+b.name+' \u2014 '+fmt(b.amount)+' \u2014 '+(d===0?'TODAY':d===1?'Tomorrow':'In '+d+' days')+'</div>'});
+h+='</div>';ds.innerHTML=h;
+}else{ds.innerHTML=''}
+}
+
+function renderIncome(data,t){
+document.getElementById('incomeTotal').textContent=fmt(t.totalIncome);
+var list=document.getElementById('incomeList');
+if(data.income.length===0){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">No income recorded yet</div>';return}
+var h='';
+var items=data.income.slice().reverse();
+items.forEach(function(inc,idx){
+var realIdx=data.income.length-1-idx;
+h+='<div class="list-item"><div class="info"><div class="date">'+inc.date+'</div>'+(inc.note?'<div class="note">'+inc.note+'</div>':'')+'</div><div class="amount val-green">+'+fmt(inc.amount)+'</div><button class="delete-btn" onclick="deleteIncome('+realIdx+')">\u00d7</button></div>';
+});
+list.innerHTML=h;
+}
+
+function renderBills(data,t){
+var bills=data.bills.slice();
+if(billSortMode==='due')bills.sort(function(a,b){return a.dueDay-b.dueDay});
+else if(billSortMode==='pastdue')bills.sort(function(a,b){return getDaysPastDue(b)-getDaysPastDue(a)});
+else if(billSortMode==='amount')bills.sort(function(a,b){return b.amount-a.amount});
+
+var h='';
+bills.forEach(function(bill){
+var pd=getDaysPastDue(bill);
+var pastDue=pd>0&&!bill.paid;
+var cls='bill-card'+(pastDue?' past-due':'')+(bill.paid?' paid':'');
+h+='<div class="'+cls+'">';
+h+='<div class="bill-amount'+(bill.paid?' val-green':pastDue?' val-red':'')+'">'+fmt(bill.amount)+'</div>';
+h+='<div class="bill-name'+(bill.paid?' paid-name':'')+'">'+bill.name;
+if(bill.paid)h+='<span class="bill-badge badge-paid">PAID \u2705</span>';
+if(pastDue&&isGraceExpired(bill))h+='<span class="bill-badge badge-pastdue">PAST DUE</span>';
+else if(pastDue&&isInGrace(bill))h+='<span class="bill-badge badge-pastdue">'+graceRemaining(bill)+'d grace left</span>';
+if(bill.urgent&&!bill.paid)h+='<span class="bill-badge badge-urgent">\u26a1 URGENT</span>';
+if(bill.carriedOver&&!bill.paid)h+='<span class="bill-badge badge-carried">OWED FROM LAST MONTH</span>';
+h+='</div>';
+h+='<div class="bill-meta">Due: '+bill.dueDay+ordSuffix(bill.dueDay)+' | Grace: '+bill.grace+' days</div>';
+h+='<div class="bill-actions">';
+if(!bill.paid){
+h+='<button class="btn-sm btn-accent" onclick="markBillPaid('+bill.id+')">Pay</button>';
+h+='<button class="btn-sm '+(bill.urgent?'btn-accent':'btn-outline')+'" onclick="toggleUrgent('+bill.id+')">\u26a1 '+(bill.urgent?'Urgent':'Mark Urgent')+'</button>';
+}else{
+h+='<button class="btn-sm btn-ghost" onclick="unmarkBillPaid('+bill.id+')">Undo</button>';
+}
+h+='<button class="btn-sm btn-ghost" onclick="editBill('+bill.id+')">Edit</button>';
+h+='<button class="btn-sm btn-ghost" onclick="deleteBill('+bill.id+')" style="color:var(--accent)">Delete</button>';
+h+='</div></div>';
+});
+document.getElementById('billsList').innerHTML=h;
+document.getElementById('billsTotals').innerHTML='<span>Total: '+fmt(t.totalBills)+'</span><span style="color:var(--green)">Paid: '+fmt(t.paidBills)+'</span><span style="color:var(--accent-light)">Left: '+fmt(t.remaining)+'</span>';
+}
+
+function renderExpenses(data,t){
+document.getElementById('expenseTotal').textContent=fmt(t.totalExpenses);
+var list=document.getElementById('expenseList');
+if(data.expenses.length===0){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">No unexpected expenses</div>';return}
+var h='';
+var items=data.expenses.slice().reverse();
+items.forEach(function(exp,idx){
+var realIdx=data.expenses.length-1-idx;
+h+='<div class="list-item"><div class="info"><div class="date">'+exp.date+'</div><div class="note">'+exp.desc+'</div></div><div class="amount val-red">-'+fmt(exp.amount)+'</div><button class="delete-btn" onclick="deleteExpense('+realIdx+')">\u00d7</button></div>';
+});
+list.innerHTML=h;
+}
+
+function renderGoals(data,t){
+var totalSaved=0;var totalTarget=0;
+data.goals.forEach(function(g){totalSaved+=g.saved;totalTarget+=g.target});
+document.getElementById('savingsTotal').textContent=fmt(totalSaved);
+document.getElementById('savingsOf').textContent='of '+fmt(totalTarget)+' total goal';
+var goals=data.goals.slice();
+goals.sort(function(a,b){return a.priority-b.priority});
+var h='';
+goals.forEach(function(g){
+var pct=g.target>0?Math.min(100,Math.round((g.saved/g.target)*100)):0;
+var remaining=Math.max(0,g.target-g.saved);
+h+='<div class="goal-card"><div class="goal-header"><div class="goal-name">#'+g.priority+' '+g.name+'</div><div class="goal-amounts">'+fmt(g.saved)+' / '+fmt(g.target)+'</div></div>';
+h+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+h+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+pct+'% complete \u2014 '+fmt(remaining)+' remaining</div>';
+h+='<div class="goal-add-row"><input type="number" inputmode="decimal" class="goal-input" id="goal-input-'+g.id+'" placeholder="$0.00" step="0.01"><button class="btn-sm btn-accent" onclick="addToGoal('+g.id+')">Add</button><button class="btn-sm btn-ghost" onclick="deleteGoal('+g.id+')" style="color:var(--accent)">\u00d7</button></div>';
+h+='</div>';
+});
+document.getElementById('goalsList').innerHTML=h;
+}
+
+// ===== ACTION FUNCTIONS =====
+function switchTab(tab,btn){
+var tabs=document.querySelectorAll('.tab-content');
+for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
+document.getElementById('tab-'+tab).classList.add('active');
+var btns=document.querySelectorAll('.nav-btn');
+for(var j=0;j<btns.length;j++)btns[j].classList.remove('active');
+if(btn)btn.classList.add('active');
+var fab=document.getElementById('addBillFab');
+fab.className=tab==='bills'?'fab':'fab hidden';
+document.getElementById('mainContent').scrollTop=0;
+}
+
+function showToast(msg){
+var existing=document.querySelector('.toast');
+if(existing)existing.remove();
+var t=document.createElement('div');t.className='toast';t.textContent=msg;
+document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},3000);
+}
+
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+function showConfirm(title,msg,fn){
+document.getElementById('confirmTitle').textContent=title;
+document.getElementById('confirmMsg').textContent=msg;
+document.getElementById('confirmYes').onclick=function(){fn();closeModal('confirmModal')};
+openModal('confirmModal');
+}
+
+// INCOME
+function addIncome(){
+var dateEl=document.getElementById('incomeDate');
+var amtEl=document.getElementById('incomeAmount');
+var noteEl=document.getElementById('incomeNote');
+var amount=parseFloat(amtEl.value);
+if(!amount||amount<=0){showToast('Enter a valid amount');return}
+currentData.income.push({date:dateEl.value,amount:amount,note:noteEl.value||''});
+saveData(currentData);render();
+amtEl.value='';noteEl.value='';
+showToast('Income added: '+fmt(amount));
+}
+function deleteIncome(idx){
+showConfirm('Delete Income','Remove this income entry?',function(){
+currentData.income.splice(idx,1);saveData(currentData);render();showToast('Income removed');
+});
+}
+
+// BILLS
+function markBillPaid(id){
+showConfirm('Mark as Paid','Mark this bill as paid?',function(){
+currentData.bills.forEach(function(b){if(b.id===id){b.paid=true;b.urgent=false}});
+saveData(currentData);render();showToast('Bill marked paid');
+});
+}
+function unmarkBillPaid(id){
+currentData.bills.forEach(function(b){if(b.id===id)b.paid=false});
+saveData(currentData);render();
+}
+function toggleUrgent(id){
+currentData.bills.forEach(function(b){if(b.id===id)b.urgent=!b.urgent});
+saveData(currentData);render();
+}
+function sortBills(mode,btn){
+billSortMode=mode;
+var btns=document.querySelectorAll('.sort-btn');
+for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
+if(btn)btn.classList.add('active');
+render();
+}
+function openAddBillModal(){
+document.getElementById('billModalTitle').textContent='Add Bill';
+document.getElementById('billName').value='';
+document.getElementById('billAmount').value='';
+document.getElementById('billDueDay').value='';
+document.getElementById('billGrace').value='5';
+document.getElementById('billEditId').value='';
+openModal('addBillModal');
+}
+function editBill(id){
+var bill=null;currentData.bills.forEach(function(b){if(b.id===id)bill=b});
+if(!bill)return;
+document.getElementById('billModalTitle').textContent='Edit Bill';
+document.getElementById('billName').value=bill.name;
+document.getElementById('billAmount').value=bill.amount;
+document.getElementById('billDueDay').value=bill.dueDay;
+document.getElementById('billGrace').value=bill.grace;
+document.getElementById('billEditId').value=id;
+openModal('addBillModal');
+}
+function saveBill(){
+var name=document.getElementById('billName').value.trim();
+var amount=parseFloat(document.getElementById('billAmount').value);
+var dueDay=parseInt(document.getElementById('billDueDay').value);
+var grace=parseInt(document.getElementById('billGrace').value)||0;
+var editId=document.getElementById('billEditId').value;
+if(!name){showToast('Enter a bill name');return}
+if(isNaN(amount)||amount<0){showToast('Enter a valid amount');return}
+if(!dueDay||dueDay<1||dueDay>31){showToast('Enter a valid due day (1-31)');return}
+if(editId){
+var eid=parseInt(editId);
+currentData.bills.forEach(function(b){if(b.id===eid){b.name=name;b.amount=amount;b.dueDay=dueDay;b.grace=grace}});
+}else{
+var maxId=0;currentData.bills.forEach(function(b){if(b.id>maxId)maxId=b.id});
+currentData.bills.push({id:maxId+1,name:name,amount:amount,dueDay:dueDay,grace:grace,paid:false,urgent:false,carriedOver:false});
+}
+saveData(currentData);render();closeModal('addBillModal');
+showToast(editId?'Bill updated':'Bill added');
+}
+function deleteBill(id){
+showConfirm('Delete Bill','Remove this bill permanently?',function(){
+currentData.bills=currentData.bills.filter(function(b){return b.id!==id});
+saveData(currentData);render();showToast('Bill removed');
+});
+}
+
+// EXPENSES
+function addExpense(){
+var dateEl=document.getElementById('expenseDate');
+var amtEl=document.getElementById('expenseAmount');
+var descEl=document.getElementById('expenseDesc');
+var amount=parseFloat(amtEl.value);
+if(!amount||amount<=0){showToast('Enter a valid amount');return}
+if(!descEl.value.trim()){showToast('Enter a description');return}
+currentData.expenses.push({date:dateEl.value,amount:amount,desc:descEl.value.trim()});
+saveData(currentData);render();
+amtEl.value='';descEl.value='';
+showToast('Expense added: '+fmt(amount));
+}
+function deleteExpense(idx){
+showConfirm('Delete Expense','Remove this expense?',function(){
+currentData.expenses.splice(idx,1);saveData(currentData);render();showToast('Expense removed');
+});
+}
+
+// GOALS
+function addToGoal(id){
+var input=document.getElementById('goal-input-'+id);
+var amount=parseFloat(input.value);
+if(!amount||amount<=0){showToast('Enter an amount');return}
+currentData.goals.forEach(function(g){
+if(g.id===id){
+var remaining=g.target-g.saved;
+var actual=Math.min(amount,remaining);
+g.saved+=actual;
+}
+});
+saveData(currentData);render();
+showToast('Added to savings');
+}
+function deleteGoal(id){
+showConfirm('Delete Goal','Remove this savings goal?',function(){
+currentData.goals=currentData.goals.filter(function(g){return g.id!==id});
+saveData(currentData);render();showToast('Goal removed');
+});
+}
+function openAddGoalModal(){
+document.getElementById('goalName').value='';
+document.getElementById('goalTarget').value='';
+document.getElementById('goalPriority').value=currentData.goals.length+1;
+openModal('addGoalModal');
+}
+function saveGoal(){
+var name=document.getElementById('goalName').value.trim();
+var target=parseFloat(document.getElementById('goalTarget').value);
+var priority=parseInt(document.getElementById('goalPriority').value)||1;
+if(!name){showToast('Enter a goal name');return}
+if(!target||target<=0){showToast('Enter a target amount');return}
+var maxId=0;currentData.goals.forEach(function(g){if(g.id>maxId)maxId=g.id});
+currentData.goals.push({id:maxId+1,name:name,target:target,saved:0,priority:priority});
+saveData(currentData);render();closeModal('addGoalModal');
+showToast('Goal added');
+}
+
+// TRANSFER TO SAVINGS
+function openTransferModal(){
+var t=calcTotals(currentData);
+var avail=t.net;
+var h='<div class="card" style="margin-bottom:14px"><div class="card-label">Available to Transfer</div><div class="card-value '+(avail>=0?'val-green':'val-red')+'">'+fmt(avail)+'</div></div>';
+var activeGoals=currentData.goals.filter(function(g){return g.saved<g.target});
+if(activeGoals.length===0){h+='<div style="text-align:center;color:var(--green);padding:20px;font-weight:600">All goals complete!</div>'}
+else{
+activeGoals.forEach(function(g){
+var remaining=g.target-g.saved;
+var pct=Math.min(100,Math.round((g.saved/g.target)*100));
+h+='<div class="card"><div class="goal-header"><div class="goal-name">'+g.name+'</div><div class="goal-amounts">'+fmt(g.saved)+' / '+fmt(g.target)+'</div></div>';
+h+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+h+='<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Remaining: '+fmt(remaining)+'</div>';
+h+='<input type="number" inputmode="decimal" id="transfer-'+g.id+'" placeholder="$0.00" step="0.01" style="text-align:right"></div>';
+});
+}
+document.getElementById('transferGoalsList').innerHTML=h;
+openModal('transferModal');
+}
+function executeTransfer(){
+var t=calcTotals(currentData);
+var avail=t.net;
+var totalTransferred=0;
+currentData.goals.forEach(function(g){
+var input=document.getElementById('transfer-'+g.id);
+if(input){
+var amount=parseFloat(input.value);
+if(amount&&amount>0){
+var remaining=g.target-g.saved;
+var actual=Math.min(amount,remaining,avail-totalTransferred);
+if(actual>0){g.saved+=actual;totalTransferred+=actual}
+}}
+});
+if(totalTransferred>0){
+saveData(currentData);render();closeModal('transferModal');
+showToast('Transferred '+fmt(totalTransferred)+' to savings');
+}else{showToast('Enter an amount to transfer')}
+}
+
+// ===== INIT =====
+document.getElementById('incomeDate').valueAsDate=new Date();
+document.getElementById('expenseDate').valueAsDate=new Date();
+initData();
+
+// Service Worker
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW registration failed')});
+}
+</script>
+</body>
+</html>
