@@ -1,10 +1,10 @@
 var CACHE_NAME = 'budget-tracker-v1';
 var urlsToCache = [
-  '/budget-tracker/',
-  '/budget-tracker/index.html',
-  '/budget-tracker/manifest.json',
-  '/budget-tracker/icon-192.png',
-  '/budget-tracker/icon-512.png'
+  '/Budget-Tracker/',
+  '/Budget-Tracker/index.html',
+  '/Budget-Tracker/manifest.json',
+  '/Budget-Tracker/icon-192.png',
+  '/Budget-Tracker/icon-512.png'
 ];
 
 self.addEventListener('install', function(event) {
@@ -28,7 +28,7 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        return caches.match('/budget-tracker/index.html');
+      return caches.match('/Budget-Tracker/index.html');
       });
     })
   );
