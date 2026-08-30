@@ -3,8 +3,8 @@
   "short_name": "Budget",
   "start_url": "/Budget-Tracker/",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#dc2626",
+  "background_color": "#0a1628",
+  "theme_color": "#eab308",
   "orientation": "portrait",
   "icons": [
     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
