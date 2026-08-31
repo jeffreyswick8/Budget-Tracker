@@ -114,13 +114,38 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .totals-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:12px;display:flex;justify-content:space-between;font-size:13px}
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle}
 .sync-online{background:var(--green)}.sync-offline{background:var(--accent)}
+.role-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:8px;vertical-align:middle;letter-spacing:.5px}
+.role-admin{background:rgba(34,197,94,.15);color:var(--green);border:1px solid var(--green)}
+.role-viewer{background:rgba(234,179,8,.15);color:var(--amber);border:1px solid var(--amber)}
+.viewer-hide{display:none!important}
+.role-setup{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.role-setup .inner{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:360px;width:100%;text-align:center}
+.role-setup h2{color:var(--accent);font-size:20px;margin-bottom:8px}
+.role-setup p{color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.5}
+.role-setup .role-option{width:100%;padding:16px;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--card);color:var(--text);margin-bottom:10px;transition:all .2s}
+.role-setup .role-option:active{transform:scale(.97)}
+.role-setup .role-option.opt-admin:hover,.role-setup .role-option.opt-admin:active{border-color:var(--green);background:rgba(34,197,94,.1)}
+.role-setup .role-option.opt-viewer:hover,.role-setup .role-option.opt-viewer:active{border-color:var(--amber);background:rgba(234,179,8,.1)}
+.role-setup .role-desc{font-size:11px;color:var(--muted);margin-top:4px;font-weight:400}
 </style>
 </head>
 <body>
 <div class="app">
+
+<!-- ROLE SETUP SCREEN (shown on first launch) -->
+<div class="role-setup" id="roleSetup" style="display:none">
+<div class="inner">
+<h2>&#9733; Welcome</h2>
+<p>Who's using this device?<br>This is a one-time setup.</p>
+<button class="role-option opt-admin" onclick="setRole('admin')"><strong>&#x1F511; Admin</strong><div class="role-desc">Full control — add, edit, delete, and sync to all devices</div></button>
+<button class="role-option opt-viewer" onclick="setRole('viewer')"><strong>&#x1F441; Viewer</strong><div class="role-desc">View only — see all data but can't make changes</div></button>
+</div>
+</div>
+
 <div class="header">
-<h1>Budget Tracker <span class="sync-dot sync-offline" id="syncDot"></span></h1>
+<h1>Budget Tracker <span class="sync-dot sync-offline" id="syncDot"></span><span class="role-badge" id="roleBadge" style="display:none"></span></h1>
 <div class="month" id="headerMonth"></div>
+<div style="font-size:10px;color:var(--muted);margin-top:2px;cursor:pointer" id="changeRoleLink" onclick="changeRole()"></div>
 </div>
 <div class="content" id="mainContent">
 
@@ -133,7 +158,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div class="summary-item"><div class="val val-red" id="dashRemaining">$0.00</div><div class="lbl">Remaining</div></div>
 </div>
 <div class="card"><div class="card-label">Net Cash Position</div><div class="card-value" id="dashNet">$0.00</div><div class="health-bar"><div class="health-fill" id="healthFill"></div></div></div>
-<button class="btn btn-outline" onclick="openTransferModal()" style="margin-bottom:10px">Transfer to Savings</button>
+<button class="btn btn-outline admin-only" onclick="openTransferModal()" style="margin-bottom:10px">Transfer to Savings</button>
 <div id="dueSoon"></div>
 </div>
 
@@ -141,7 +166,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div class="tab-content" id="tab-income">
 <div class="section-title">Income</div>
 <div class="card"><div class="card-label">This Month</div><div class="card-value val-green" id="incomeTotal">$0.00</div></div>
-<div class="card">
+<div class="card admin-only">
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="incomeDate"></div>
 <div class="form-group"><label class="form-label">Amount</label><input type="number" inputmode="decimal" id="incomeAmount" placeholder="0.00" step="0.01"></div>
 <div class="form-group"><label class="form-label">Note (optional)</label><input type="text" id="incomeNote" placeholder="Description"></div>
@@ -166,7 +191,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div class="tab-content" id="tab-expenses">
 <div class="section-title">Unexpected Expenses</div>
 <div class="card"><div class="card-label">This Month</div><div class="card-value val-red" id="expenseTotal">$0.00</div></div>
-<div class="card">
+<div class="card admin-only">
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="expenseDate"></div>
 <div class="form-group"><label class="form-label">Amount</label><input type="number" inputmode="decimal" id="expenseAmount" placeholder="0.00" step="0.01"></div>
 <div class="form-group"><label class="form-label">Description</label><input type="text" id="expenseDesc" placeholder="What was it?"></div>
@@ -180,7 +205,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <div class="section-title">Savings Goals</div>
 <div class="card"><div class="card-label">Total Saved</div><div class="card-value val-green" id="savingsTotal">$0.00</div><div style="font-size:11px;color:var(--muted)" id="savingsOf"></div></div>
 <div id="goalsList"></div>
-<button class="btn btn-ghost" onclick="openAddGoalModal()">+ Add Goal</button>
+<button class="btn btn-ghost admin-only" onclick="openAddGoalModal()">+ Add Goal</button>
 </div>
 </div>
 
@@ -236,6 +261,7 @@ var db=firebase.database();
 var isOnline=false;
 var currentData=null;
 var billSortMode='due';
+var deviceRole=localStorage.getItem('budget-role')||null;
 
 var now=new Date();
 var currentMonth=now.getMonth();
@@ -243,6 +269,9 @@ var currentYear=now.getFullYear();
 
 function getKey(){return currentYear+'-'+currentMonth}
 function fmt(n){return '$'+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function isViewer(){return deviceRole==='viewer'}
+function isAdmin(){return deviceRole==='admin'}
+
 
 // ===== DEFAULT DATA =====
 function getDefaultBills(){return[
@@ -281,7 +310,7 @@ function saveData(data){
 data.lastModified=Date.now();
 currentData=data;
 saveLocal(data);
-try{db.ref('budgets/'+getKey()).set(data)}catch(e){}
+if(!isViewer()){try{db.ref('budgets/'+getKey()).set(data)}catch(e){}}
 }
 
 function doRollover(data){
@@ -324,8 +353,8 @@ try{
 db.ref('budgets/'+getKey()).on('value',function(snapshot){
 var fbData=snapshot.val();
 if(fbData){
-var localTime=currentData.lastModified||0;
-var fbTime=fbData.lastModified||0;
+var localTime=isViewer()?0:currentData.lastModified||0;
+var fbTime=isViewer()?1:fbData.lastModified||0;
 if(fbTime>=localTime){
 currentData=fbData;
 if(!currentData.bills)currentData.bills=getDefaultBills();
@@ -415,6 +444,7 @@ function ordSuffix(n){var s=['th','st','nd','rd'];var v=n%100;return s[(v-20)%10
 function render(){
 if(!currentData)return;
 var t=calcTotals(currentData);
+var v=isViewer();
 renderDashboard(currentData,t);
 renderIncome(currentData,t);
 renderBills(currentData,t);
@@ -474,7 +504,7 @@ var h='';
 var items=data.income.slice().reverse();
 items.forEach(function(inc,idx){
 var realIdx=data.income.length-1-idx;
-h+='<div class="list-item"><div class="info"><div class="date">'+inc.date+'</div>'+(inc.note?'<div class="note">'+inc.note+'</div>':'')+'</div><div class="amount val-green">+'+fmt(inc.amount)+'</div><button class="delete-btn" onclick="deleteIncome('+realIdx+')">\u00d7</button></div>';
+h+='<div class="list-item"><div class="info"><div class="date">'+inc.date+'</div>'+(inc.note?'<div class="note">'+inc.note+'</div>':'')+'</div><div class="amount val-green">+'+fmt(inc.amount)+'</div>'+(isViewer()?'':'<button class="delete-btn" onclick="deleteIncome('+realIdx+')">\u00d7</button>')+'</div>';
 });
 list.innerHTML=h;
 }
@@ -500,6 +530,7 @@ if(bill.urgent&&!bill.paid)h+='<span class="bill-badge badge-urgent">\u26a1 URGE
 if(bill.carriedOver&&!bill.paid)h+='<span class="bill-badge badge-carried">OWED FROM LAST MONTH</span>';
 h+='</div>';
 h+='<div class="bill-meta">Due: '+bill.dueDay+ordSuffix(bill.dueDay)+' | Grace: '+bill.grace+' days</div>';
+if(!isViewer()){
 h+='<div class="bill-actions">';
 if(!bill.paid){
 h+='<button class="btn-sm btn-accent" onclick="markBillPaid('+bill.id+')">Pay</button>';
@@ -510,6 +541,7 @@ h+='<button class="btn-sm btn-ghost" onclick="unmarkBillPaid('+bill.id+')">Undo<
 h+='<button class="btn-sm btn-ghost" onclick="editBill('+bill.id+')">Edit</button>';
 h+='<button class="btn-sm btn-ghost" onclick="deleteBill('+bill.id+')" style="color:var(--accent)">Delete</button>';
 h+='</div></div>';
+}else{h+='</div>';}
 });
 document.getElementById('billsList').innerHTML=h;
 document.getElementById('billsTotals').innerHTML='<span>Total: '+fmt(t.totalBills)+'</span><span style="color:var(--green)">Paid: '+fmt(t.paidBills)+'</span><span style="color:var(--accent-light)">Left: '+fmt(t.remaining)+'</span>';
@@ -523,7 +555,7 @@ var h='';
 var items=data.expenses.slice().reverse();
 items.forEach(function(exp,idx){
 var realIdx=data.expenses.length-1-idx;
-h+='<div class="list-item"><div class="info"><div class="date">'+exp.date+'</div><div class="note">'+exp.desc+'</div></div><div class="amount val-red">-'+fmt(exp.amount)+'</div><button class="delete-btn" onclick="deleteExpense('+realIdx+')">\u00d7</button></div>';
+h+='<div class="list-item"><div class="info"><div class="date">'+exp.date+'</div><div class="note">'+exp.desc+'</div></div><div class="amount val-red">-'+fmt(exp.amount)+'</div>'+(isViewer()?'':'<button class="delete-btn" onclick="deleteExpense('+realIdx+')">\u00d7</button>')+'</div>';
 });
 list.innerHTML=h;
 }
@@ -542,7 +574,8 @@ var remaining=Math.max(0,g.target-g.saved);
 h+='<div class="goal-card"><div class="goal-header"><div class="goal-name">#'+g.priority+' '+g.name+'</div><div class="goal-amounts">'+fmt(g.saved)+' / '+fmt(g.target)+'</div></div>';
 h+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
 h+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+pct+'% complete \u2014 '+fmt(remaining)+' remaining</div>';
-h+='<div class="goal-add-row"><input type="number" inputmode="decimal" class="goal-input" id="goal-input-'+g.id+'" placeholder="$0.00" step="0.01"><button class="btn-sm btn-accent" onclick="addToGoal('+g.id+')">Add</button><button class="btn-sm btn-ghost" onclick="deleteGoal('+g.id+')" style="color:var(--accent)">\u00d7</button></div>';
+if(!isViewer()){
+h+='<div class="goal-add-row"><input type="number" inputmode="decimal" class="goal-input" id="goal-input-'+g.id+'" placeholder="$0.00" step="0.01"><button class="btn-sm btn-accent" onclick="addToGoal('+g.id+')">Add</button><button class="btn-sm btn-ghost" onclick="deleteGoal('+g.id+')" style="color:var(--accent)">\u00d7</button></div>';}
 h+='</div>';
 });
 document.getElementById('goalsList').innerHTML=h;
@@ -764,7 +797,39 @@ showToast('Transferred '+fmt(totalTransferred)+' to savings');
 // ===== INIT =====
 document.getElementById('incomeDate').valueAsDate=new Date();
 document.getElementById('expenseDate').valueAsDate=new Date();
+
+// ===== ROLE SYSTEM =====
+function setRole(role){
+deviceRole=role;
+localStorage.setItem('budget-role',role);
+document.getElementById('roleSetup').style.display='none';
+applyRoleUI();
 initData();
+showToast(role==='admin'?'Admin mode — full control':'Viewer mode — read only');
+}
+function changeRole(){
+showConfirm('Change Role','Switch this device to a different role?',function(){
+localStorage.removeItem('budget-role');
+deviceRole=null;
+document.getElementById('roleSetup').style.display='flex';
+});
+}
+function applyRoleUI(){
+var badge=document.getElementById('roleBadge');
+var link=document.getElementById('changeRoleLink');
+if(deviceRole==='admin'){badge.textContent='ADMIN';badge.className='role-badge role-admin';badge.style.display='';link.textContent='Tap to change role';}
+else if(deviceRole==='viewer'){badge.textContent='VIEW ONLY';badge.className='role-badge role-viewer';badge.style.display='';link.textContent='Tap to change role';}
+else{badge.style.display='none';link.textContent='';}
+// Hide admin-only elements for viewers
+var adminEls=document.querySelectorAll('.admin-only');
+for(var i=0;i<adminEls.length;i++){adminEls[i].style.display=isViewer()?'none':'';}
+// Hide FAB for viewers
+if(isViewer())document.getElementById('addBillFab').className='fab hidden';
+}
+
+// ===== BOOT =====
+if(!deviceRole){document.getElementById('roleSetup').style.display='flex';}
+else{applyRoleUI();initData();}
 
 // Service Worker
 if('serviceWorker' in navigator){
