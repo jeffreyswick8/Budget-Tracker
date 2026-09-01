@@ -340,22 +340,55 @@ return data;
 function initData(){
 var local=getLocalData();
 if(local){
+// Local data exists — use it, then listen for newer Firebase updates
 currentData=local;
 render();
+startFirebaseListener();
 }else{
+// No local data for this month — check Firebase FIRST before generating defaults
+try{
+db.ref('budgets/'+getKey()).once('value',function(snapshot){
+var fbData=snapshot.val();
+if(fbData){
+// Firebase has data — use it (another device or previous session saved it)
+currentData=fbData;
+if(!currentData.bills)currentData.bills=getDefaultBills();
+if(!currentData.income)currentData.income=[];
+if(!currentData.expenses)currentData.expenses=[];
+if(!currentData.goals)currentData.goals=getDefaultGoals();
+saveLocal(currentData);
+render();
+isOnline=true;
+document.getElementById('syncDot').className='sync-dot sync-online';
+showToast('Synced from cloud');
+}else{
+// Firebase has nothing either — truly a new month, safe to create defaults
 currentData=getDefaultData();
 currentData=doRollover(currentData);
 saveData(currentData);
 render();
 }
-// Listen for Firebase changes (real-time sync)
+startFirebaseListener();
+});
+}catch(e){
+// Firebase unavailable — fall back to defaults offline
+currentData=getDefaultData();
+currentData=doRollover(currentData);
+saveLocal(currentData);
+render();
+isOnline=false;
+}
+}
+}
+
+function startFirebaseListener(){
 try{
 db.ref('budgets/'+getKey()).on('value',function(snapshot){
 var fbData=snapshot.val();
 if(fbData){
 var localTime=isViewer()?0:currentData.lastModified||0;
 var fbTime=isViewer()?1:fbData.lastModified||0;
-if(fbTime>=localTime){
+if(fbTime>localTime){
 currentData=fbData;
 if(!currentData.bills)currentData.bills=getDefaultBills();
 if(!currentData.income)currentData.income=[];

@@ -1,4 +1,4 @@
-var CACHE_NAME = 'budget-tracker-v4';
+var CACHE_NAME = 'budget-tracker-v5';
 var urlsToCache = [
   '/Budget-Tracker/',
   '/Budget-Tracker/index.html',
